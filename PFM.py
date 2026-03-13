@@ -441,7 +441,6 @@ def evolve_one_step(
     df = np.empty(nmax, dtype=np.float64)
     tmp_phi = np.empty(nmax, dtype=np.float64)
 
-    # local cache: center + 6 neighbors
     p0_arr = np.empty(nmax, dtype=np.float64)
     p1_arr = np.empty(nmax, dtype=np.float64)
     p2_arr = np.empty(nmax, dtype=np.float64)
@@ -462,41 +461,260 @@ def evolve_one_step(
 
                 count = 0
 
+                # -------------------------
+                # center
+                # -------------------------
                 for s in range(nmax):
-                    count = append_gid_if_new(cand_ids, count, idO[i, j, k, s])
-                for s in range(nmax):
-                    count = append_gid_if_new(cand_ids, count, idO[i + 1, j, k, s])
-                for s in range(nmax):
-                    count = append_gid_if_new(cand_ids, count, idO[i - 1, j, k, s])
-                for s in range(nmax):
-                    count = append_gid_if_new(cand_ids, count, idO[i, j + 1, k, s])
-                for s in range(nmax):
-                    count = append_gid_if_new(cand_ids, count, idO[i, j - 1, k, s])
-                for s in range(nmax):
-                    count = append_gid_if_new(cand_ids, count, idO[i, j, k + 1, s])
-                for s in range(nmax):
-                    count = append_gid_if_new(cand_ids, count, idO[i, j, k - 1, s])
+                    gid = idO[i, j, k, s]
+                    if gid == EMPTY_ID:
+                        continue
 
-                # 후보상별 center + 6-neighbor 값을 먼저 읽고
-                # local sum, range 판정, active 후보 압축을 한 번에 수행
+                    idx = -1
+                    for t in range(count):
+                        if cand_ids[t] == gid:
+                            idx = t
+                            break
+
+                    if idx == -1:
+                        if count >= nmax:
+                            continue
+                        idx = count
+                        cand_ids[idx] = gid
+                        count += 1
+
+                        df[idx] = 0.0
+                        tmp_phi[idx] = 0.0
+                        p0_arr[idx] = 0.0
+                        p1_arr[idx] = 0.0
+                        p2_arr[idx] = 0.0
+                        p3_arr[idx] = 0.0
+                        p4_arr[idx] = 0.0
+                        p5_arr[idx] = 0.0
+                        p6_arr[idx] = 0.0
+                        psum_arr[idx] = 0.0
+                        range_arr[idx] = 0
+                        lap_arr[idx] = 0.0
+
+                    p0_arr[idx] = phiO[i, j, k, s]
+
+                # -------------------------
+                # x+
+                # -------------------------
+                for s in range(nmax):
+                    gid = idO[i + 1, j, k, s]
+                    if gid == EMPTY_ID:
+                        continue
+
+                    idx = -1
+                    for t in range(count):
+                        if cand_ids[t] == gid:
+                            idx = t
+                            break
+
+                    if idx == -1:
+                        if count >= nmax:
+                            continue
+                        idx = count
+                        cand_ids[idx] = gid
+                        count += 1
+
+                        df[idx] = 0.0
+                        tmp_phi[idx] = 0.0
+                        p0_arr[idx] = 0.0
+                        p1_arr[idx] = 0.0
+                        p2_arr[idx] = 0.0
+                        p3_arr[idx] = 0.0
+                        p4_arr[idx] = 0.0
+                        p5_arr[idx] = 0.0
+                        p6_arr[idx] = 0.0
+                        psum_arr[idx] = 0.0
+                        range_arr[idx] = 0
+                        lap_arr[idx] = 0.0
+
+                    p1_arr[idx] = phiO[i + 1, j, k, s]
+
+                # -------------------------
+                # x-
+                # -------------------------
+                for s in range(nmax):
+                    gid = idO[i - 1, j, k, s]
+                    if gid == EMPTY_ID:
+                        continue
+
+                    idx = -1
+                    for t in range(count):
+                        if cand_ids[t] == gid:
+                            idx = t
+                            break
+
+                    if idx == -1:
+                        if count >= nmax:
+                            continue
+                        idx = count
+                        cand_ids[idx] = gid
+                        count += 1
+
+                        df[idx] = 0.0
+                        tmp_phi[idx] = 0.0
+                        p0_arr[idx] = 0.0
+                        p1_arr[idx] = 0.0
+                        p2_arr[idx] = 0.0
+                        p3_arr[idx] = 0.0
+                        p4_arr[idx] = 0.0
+                        p5_arr[idx] = 0.0
+                        p6_arr[idx] = 0.0
+                        psum_arr[idx] = 0.0
+                        range_arr[idx] = 0
+                        lap_arr[idx] = 0.0
+
+                    p2_arr[idx] = phiO[i - 1, j, k, s]
+
+                # -------------------------
+                # y+
+                # -------------------------
+                for s in range(nmax):
+                    gid = idO[i, j + 1, k, s]
+                    if gid == EMPTY_ID:
+                        continue
+
+                    idx = -1
+                    for t in range(count):
+                        if cand_ids[t] == gid:
+                            idx = t
+                            break
+
+                    if idx == -1:
+                        if count >= nmax:
+                            continue
+                        idx = count
+                        cand_ids[idx] = gid
+                        count += 1
+
+                        df[idx] = 0.0
+                        tmp_phi[idx] = 0.0
+                        p0_arr[idx] = 0.0
+                        p1_arr[idx] = 0.0
+                        p2_arr[idx] = 0.0
+                        p3_arr[idx] = 0.0
+                        p4_arr[idx] = 0.0
+                        p5_arr[idx] = 0.0
+                        p6_arr[idx] = 0.0
+                        psum_arr[idx] = 0.0
+                        range_arr[idx] = 0
+                        lap_arr[idx] = 0.0
+
+                    p3_arr[idx] = phiO[i, j + 1, k, s]
+
+                # -------------------------
+                # y-
+                # -------------------------
+                for s in range(nmax):
+                    gid = idO[i, j - 1, k, s]
+                    if gid == EMPTY_ID:
+                        continue
+
+                    idx = -1
+                    for t in range(count):
+                        if cand_ids[t] == gid:
+                            idx = t
+                            break
+
+                    if idx == -1:
+                        if count >= nmax:
+                            continue
+                        idx = count
+                        cand_ids[idx] = gid
+                        count += 1
+
+                        df[idx] = 0.0
+                        tmp_phi[idx] = 0.0
+                        p0_arr[idx] = 0.0
+                        p1_arr[idx] = 0.0
+                        p2_arr[idx] = 0.0
+                        p3_arr[idx] = 0.0
+                        p4_arr[idx] = 0.0
+                        p5_arr[idx] = 0.0
+                        p6_arr[idx] = 0.0
+                        psum_arr[idx] = 0.0
+                        range_arr[idx] = 0
+                        lap_arr[idx] = 0.0
+
+                    p4_arr[idx] = phiO[i, j - 1, k, s]
+
+                # -------------------------
+                # z+
+                # -------------------------
+                for s in range(nmax):
+                    gid = idO[i, j, k + 1, s]
+                    if gid == EMPTY_ID:
+                        continue
+
+                    idx = -1
+                    for t in range(count):
+                        if cand_ids[t] == gid:
+                            idx = t
+                            break
+
+                    if idx == -1:
+                        if count >= nmax:
+                            continue
+                        idx = count
+                        cand_ids[idx] = gid
+                        count += 1
+
+                        df[idx] = 0.0
+                        tmp_phi[idx] = 0.0
+                        p0_arr[idx] = 0.0
+                        p1_arr[idx] = 0.0
+                        p2_arr[idx] = 0.0
+                        p3_arr[idx] = 0.0
+                        p4_arr[idx] = 0.0
+                        p5_arr[idx] = 0.0
+                        p6_arr[idx] = 0.0
+                        psum_arr[idx] = 0.0
+                        range_arr[idx] = 0
+                        lap_arr[idx] = 0.0
+
+                    p5_arr[idx] = phiO[i, j, k + 1, s]
+
+                # -------------------------
+                # z-
+                # -------------------------
+                for s in range(nmax):
+                    gid = idO[i, j, k - 1, s]
+                    if gid == EMPTY_ID:
+                        continue
+
+                    idx = -1
+                    for t in range(count):
+                        if cand_ids[t] == gid:
+                            idx = t
+                            break
+
+                    if idx == -1:
+                        if count >= nmax:
+                            continue
+                        idx = count
+                        cand_ids[idx] = gid
+                        count += 1
+
+                        df[idx] = 0.0
+                        tmp_phi[idx] = 0.0
+                        p0_arr[idx] = 0.0
+                        p1_arr[idx] = 0.0
+                        p2_arr[idx] = 0.0
+                        p3_arr[idx] = 0.0
+                        p4_arr[idx] = 0.0
+                        p5_arr[idx] = 0.0
+                        p6_arr[idx] = 0.0
+                        psum_arr[idx] = 0.0
+                        range_arr[idx] = 0
+                        lap_arr[idx] = 0.0
+
+                    p6_arr[idx] = phiO[i, j, k - 1, s]
+
                 active_count = 0
                 for kk in range(count):
-                    gid_k = cand_ids[kk]
-
-                    # 이번 셀에서 실제 사용하는 구간만 초기화
-                    df[kk] = 0.0
-                    tmp_phi[kk] = 0.0
-                    range_arr[kk] = 0
-                    lap_arr[kk] = 0.0
-
-                    p0_arr[kk] = get_phi_at(phiO, idO, i, j, k, gid_k)
-                    p1_arr[kk] = get_phi_at(phiO, idO, i + 1, j, k, gid_k)
-                    p2_arr[kk] = get_phi_at(phiO, idO, i - 1, j, k, gid_k)
-                    p3_arr[kk] = get_phi_at(phiO, idO, i, j + 1, k, gid_k)
-                    p4_arr[kk] = get_phi_at(phiO, idO, i, j - 1, k, gid_k)
-                    p5_arr[kk] = get_phi_at(phiO, idO, i, j, k + 1, gid_k)
-                    p6_arr[kk] = get_phi_at(phiO, idO, i, j, k - 1, gid_k)
-
                     psum_arr[kk] = (
                         p0_arr[kk] + p1_arr[kk] + p2_arr[kk] +
                         p3_arr[kk] + p4_arr[kk] + p5_arr[kk] + p6_arr[kk]
@@ -511,10 +729,8 @@ def evolve_one_step(
 
                 nph = active_count
 
-                # active 후보에 대해 라플라시안을 한 번만 계산
                 for aa in range(active_count):
                     kk = active_map[aa]
-
                     if range_arr[kk] == 1:
                         p0 = p0_arr[kk]
                         p1 = p1_arr[kk]
@@ -530,27 +746,21 @@ def evolve_one_step(
                             (p5 - 2.0 * p0 + p6) / dz2
                         )
 
-                # df 계산: ll의 라플라시안은 재사용
                 for aa in range(active_count):
                     kk = active_map[aa]
-
                     if range_arr[kk] == 1:
                         for bb in range(active_count):
                             ll = active_map[bb]
                             if ll == kk:
                                 continue
-
                             if range_arr[ll] == 1:
-                                # 현재는 상수 계수. 나중에 ij 계수 넣을 때 여기만 바꾸면 됨.
                                 cep_loc = cep
                                 www_loc = www
-
                                 df[kk] += (
                                     0.5 * cep_loc * cep_loc * lap_arr[ll]
                                     + www_loc * p0_arr[ll]
                                 )
 
-                # phi 업데이트: active 후보만 대상으로 수행
                 for aa in range(active_count):
                     kk = active_map[aa]
                     pk0 = p0_arr[kk]
@@ -560,7 +770,6 @@ def evolve_one_step(
                         ll = active_map[bb]
                         if ll == kk:
                             continue
-
                         emm_loc = emm
                         plkk += emm_loc * (df[kk] - df[ll])
 
@@ -574,7 +783,6 @@ def evolve_one_step(
 
                     tmp_phi[kk] = val
 
-                # 정규화도 active 후보만 대상으로 수행
                 pNsum = 0.0
                 for aa in range(active_count):
                     kk = active_map[aa]
@@ -590,7 +798,6 @@ def evolve_one_step(
                         kk = active_map[aa]
                         tmp_phi[kk] = p0_arr[kk]
 
-                # active 후보를 앞으로 압축 복사
                 for aa in range(active_count):
                     kk = active_map[aa]
                     cand_ids[aa] = cand_ids[kk]
@@ -598,7 +805,6 @@ def evolve_one_step(
 
                 count = active_count
 
-                # tmp_phi 큰 값 순서로 정렬, cand_ids도 같이 이동
                 for a in range(count - 1):
                     max_idx = a
                     for b in range(a + 1, count):
@@ -614,7 +820,6 @@ def evolve_one_step(
                         cand_ids[a] = cand_ids[max_idx]
                         cand_ids[max_idx] = tmp_id
 
-                # pss 이상만 저장
                 slot = 0
                 for kk in range(count):
                     if tmp_phi[kk] >= pss and slot < nmax:
@@ -622,16 +827,15 @@ def evolve_one_step(
                         idN[i, j, k, slot] = cand_ids[kk]
                         slot += 1
 
-                # 아무것도 안 남으면 가장 큰 상 하나 강제 유지
                 if slot == 0 and count > 0:
                     phiN[i, j, k, 0] = 1.0
                     idN[i, j, k, 0] = cand_ids[0]
                     slot = 1
 
-                # 남는 뒷부분만 초기화
                 for s in range(slot, nmax):
                     phiN[i, j, k, s] = 0.0
                     idN[i, j, k, s] = EMPTY_ID
+
 
 if __name__ == "__main__":
     run("input.txt", out_dir="p_out")

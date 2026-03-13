@@ -441,6 +441,18 @@ def evolve_one_step(
     df = np.empty(nmax, dtype=np.float64)
     tmp_phi = np.empty(nmax, dtype=np.float64)
 
+    # Fortran식 local cache: center + 6 neighbors
+    p0_arr = np.empty(nmax, dtype=np.float64)
+    p1_arr = np.empty(nmax, dtype=np.float64)
+    p2_arr = np.empty(nmax, dtype=np.float64)
+    p3_arr = np.empty(nmax, dtype=np.float64)
+    p4_arr = np.empty(nmax, dtype=np.float64)
+    p5_arr = np.empty(nmax, dtype=np.float64)
+    p6_arr = np.empty(nmax, dtype=np.float64)
+
+    psum_arr = np.empty(nmax, dtype=np.float64)
+    range_arr = np.empty(nmax, dtype=np.int32)
+
     for i in range(1, im + 1):
         for j in range(1, jm + 1):
             for k in range(1, km + 1):
@@ -448,6 +460,17 @@ def evolve_one_step(
                     cand_ids[s] = EMPTY_ID
                     df[s] = 0.0
                     tmp_phi[s] = 0.0
+
+                    p0_arr[s] = 0.0
+                    p1_arr[s] = 0.0
+                    p2_arr[s] = 0.0
+                    p3_arr[s] = 0.0
+                    p4_arr[s] = 0.0
+                    p5_arr[s] = 0.0
+                    p6_arr[s] = 0.0
+
+                    psum_arr[s] = 0.0
+                    range_arr[s] = 0
 
                 count = 0
 
@@ -466,66 +489,64 @@ def evolve_one_step(
                 for s in range(nmax):
                     count = append_gid_if_new(cand_ids, count, idO[i, j, k - 1, s])
 
+                # 후보상별 center + 6-neighbor 값을 먼저 한 번만 읽음
                 nph = 0
-
                 for kk in range(count):
                     gid_k = cand_ids[kk]
 
-                    pk0 = get_phi_at(phiO, idO, i, j, k, gid_k)
-                    pk1 = get_phi_at(phiO, idO, i + 1, j, k, gid_k)
-                    pk2 = get_phi_at(phiO, idO, i - 1, j, k, gid_k)
-                    pk3 = get_phi_at(phiO, idO, i, j + 1, k, gid_k)
-                    pk4 = get_phi_at(phiO, idO, i, j - 1, k, gid_k)
-                    pk5 = get_phi_at(phiO, idO, i, j, k + 1, gid_k)
-                    pk6 = get_phi_at(phiO, idO, i, j, k - 1, gid_k)
+                    p0_arr[kk] = get_phi_at(phiO, idO, i, j, k, gid_k)
+                    p1_arr[kk] = get_phi_at(phiO, idO, i + 1, j, k, gid_k)
+                    p2_arr[kk] = get_phi_at(phiO, idO, i - 1, j, k, gid_k)
+                    p3_arr[kk] = get_phi_at(phiO, idO, i, j + 1, k, gid_k)
+                    p4_arr[kk] = get_phi_at(phiO, idO, i, j - 1, k, gid_k)
+                    p5_arr[kk] = get_phi_at(phiO, idO, i, j, k + 1, gid_k)
+                    p6_arr[kk] = get_phi_at(phiO, idO, i, j, k - 1, gid_k)
 
-                    pksum = pk0 + pk1 + pk2 + pk3 + pk4 + pk5 + pk6
-                    Krange = 0
+                    psum_arr[kk] = (
+                        p0_arr[kk] + p1_arr[kk] + p2_arr[kk] +
+                        p3_arr[kk] + p4_arr[kk] + p5_arr[kk] + p6_arr[kk]
+                    )
 
-                    if pksum >= pss:
+                    if psum_arr[kk] >= pss:
                         nph += 1
-                        if pksum <= (7.0 - pss):
-                            Krange = 1
+                        if psum_arr[kk] <= (7.0 - pss):
+                            range_arr[kk] = 1
 
-                    for ll in range(count):
-                        gid_l = cand_ids[ll]
-                        if gid_l == gid_k:
-                            continue
-
-                        pl0 = get_phi_at(phiO, idO, i, j, k, gid_l)
-                        pl1 = get_phi_at(phiO, idO, i + 1, j, k, gid_l)
-                        pl2 = get_phi_at(phiO, idO, i - 1, j, k, gid_l)
-                        pl3 = get_phi_at(phiO, idO, i, j + 1, k, gid_l)
-                        pl4 = get_phi_at(phiO, idO, i, j - 1, k, gid_l)
-                        pl5 = get_phi_at(phiO, idO, i, j, k + 1, gid_l)
-                        pl6 = get_phi_at(phiO, idO, i, j, k - 1, gid_l)
-
-                        plsum = pl0 + pl1 + pl2 + pl3 + pl4 + pl5 + pl6
-                        Lrange = 0
-
-                        if plsum >= pss:
-                            if plsum <= (7.0 - pss):
-                                Lrange = 1
-
-                        if Krange == 1 and Lrange == 1:
-                            cep_loc = cep
-                            www_loc = www
-
-                            phixxl = (pl1 - 2.0 * pl0 + pl2) / dx2
-                            phiyyl = (pl3 - 2.0 * pl0 + pl4) / dy2
-                            phizzl = (pl5 - 2.0 * pl0 + pl6) / dz2
-
-                            df[kk] += 0.5 * cep_loc * cep_loc * (phixxl + phiyyl + phizzl) + www_loc * pl0
-
+                # df 계산
                 for kk in range(count):
-                    gid_k = cand_ids[kk]
-                    pk0 = get_phi_at(phiO, idO, i, j, k, gid_k)
+                    if range_arr[kk] == 1:
+                        for ll in range(count):
+                            if ll == kk:
+                                continue
+
+                            if range_arr[ll] == 1:
+                                pl0 = p0_arr[ll]
+                                pl1 = p1_arr[ll]
+                                pl2 = p2_arr[ll]
+                                pl3 = p3_arr[ll]
+                                pl4 = p4_arr[ll]
+                                pl5 = p5_arr[ll]
+                                pl6 = p6_arr[ll]
+
+                                cep_loc = cep
+                                www_loc = www
+
+                                phixxl = (pl1 - 2.0 * pl0 + pl2) / dx2
+                                phiyyl = (pl3 - 2.0 * pl0 + pl4) / dy2
+                                phizzl = (pl5 - 2.0 * pl0 + pl6) / dz2
+
+                                df[kk] += (
+                                    0.5 * cep_loc * cep_loc * (phixxl + phiyyl + phizzl)
+                                    + www_loc * pl0
+                                )
+
+                # phi 업데이트
+                for kk in range(count):
+                    pk0 = p0_arr[kk]
 
                     plkk = 0.0
-
                     for ll in range(count):
-                        gid_l = cand_ids[ll]
-                        if gid_l == gid_k:
+                        if ll == kk:
                             continue
 
                         emm_loc = emm
@@ -542,6 +563,7 @@ def evolve_one_step(
 
                     tmp_phi[kk] = val
 
+                # 정규화
                 pNsum = 0.0
                 for kk in range(count):
                     pNsum += tmp_phi[kk]
@@ -552,8 +574,7 @@ def evolve_one_step(
                         tmp_phi[kk] *= inv
                 else:
                     for kk in range(count):
-                        gid_k = cand_ids[kk]
-                        tmp_phi[kk] = get_phi_at(phiO, idO, i, j, k, gid_k)
+                        tmp_phi[kk] = p0_arr[kk]
 
                 # tmp_phi 큰 값 순서로 정렬, cand_ids도 같이 이동
                 for a in range(count - 1):
@@ -571,10 +592,12 @@ def evolve_one_step(
                         cand_ids[a] = cand_ids[max_idx]
                         cand_ids[max_idx] = tmp_id
 
+                # 저장 초기화
                 for s in range(nmax):
                     phiN[i, j, k, s] = 0.0
                     idN[i, j, k, s] = EMPTY_ID
 
+                # pss 이상만 저장
                 slot = 0
                 for kk in range(count):
                     if tmp_phi[kk] >= pss and slot < nmax:
@@ -582,9 +605,9 @@ def evolve_one_step(
                         idN[i, j, k, slot] = cand_ids[kk]
                         slot += 1
 
+                # 아무것도 안 남으면 가장 큰 상 하나 강제 유지
                 if slot == 0 and count > 0:
                     phiN[i, j, k, 0] = 1.0
                     idN[i, j, k, 0] = cand_ids[0]
-
 if __name__ == "__main__":
     run("input.txt", out_dir="p_out")

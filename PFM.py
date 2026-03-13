@@ -454,7 +454,6 @@ def evolve_one_step(
     range_arr = np.empty(nmax, dtype=np.int32)
 
     # active candidate compression
-    active_ids = np.empty(nmax, dtype=np.int32)
     active_map = np.empty(nmax, dtype=np.int32)
 
     for i in range(1, im + 1):
@@ -475,8 +474,6 @@ def evolve_one_step(
 
                     psum_arr[s] = 0.0
                     range_arr[s] = 0
-
-                    active_ids[s] = EMPTY_ID
                     active_map[s] = -1
 
                 count = 0
@@ -496,8 +493,9 @@ def evolve_one_step(
                 for s in range(nmax):
                     count = append_gid_if_new(cand_ids, count, idO[i, j, k - 1, s])
 
-                # 후보상별 center + 6-neighbor 값을 먼저 읽고 local sum 계산
-                nph = 0
+                # 후보상별 center + 6-neighbor 값을 먼저 읽고
+                # local sum, range 판정, active 후보 압축을 한 번에 수행
+                active_count = 0
                 for kk in range(count):
                     gid_k = cand_ids[kk]
 
@@ -515,17 +513,13 @@ def evolve_one_step(
                     )
 
                     if psum_arr[kk] >= pss:
-                        nph += 1
+                        active_map[active_count] = kk
+                        active_count += 1
+
                         if psum_arr[kk] <= (7.0 - pss):
                             range_arr[kk] = 1
 
-                # active 후보만 압축
-                active_count = 0
-                for kk in range(count):
-                    if psum_arr[kk] >= pss:
-                        active_ids[active_count] = cand_ids[kk]
-                        active_map[active_count] = kk
-                        active_count += 1
+                nph = active_count
 
                 # df 계산: active 후보만 대상으로 수행
                 for aa in range(active_count):
@@ -639,7 +633,6 @@ def evolve_one_step(
                 if slot == 0 and count > 0:
                     phiN[i, j, k, 0] = 1.0
                     idN[i, j, k, 0] = cand_ids[0]
-
 
 if __name__ == "__main__":
     run("input.txt", out_dir="p_out")

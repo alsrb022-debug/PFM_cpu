@@ -64,3 +64,5 @@ https://github.com/alsrb022-debug/PFM_cpu.git
 
 ncs
 
+gg V G
+

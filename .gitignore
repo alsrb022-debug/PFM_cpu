@@ -1,0 +1,16 @@
+# 기본적으로 전부 무시
+*
+
+# 폴더 탐색 허용
+!*/
+
+# 코드만 허용
+!*.py
+!*.txt
+!.gitignore
+
+# Python / numba 캐시
+__pycache__/
+*.pyc
+*.nbc
+*.nbi

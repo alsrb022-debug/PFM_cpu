@@ -1,0 +1,31 @@
+[domain]
+im = 200
+jm = 200
+km = 1
+
+[grid]  # [m]
+dx = 1e-6
+dy = 1e-6
+dz = 1e-6
+
+[pf]
+nmax  = 5
+emob  = 1.0
+sigma = 0.2
+xi_in = 6
+tifac = 0.2
+pss   = 1e-5
+
+[time]
+nstep = 30000
+nout  = 2000
+
+[init] # plane triple circle sphere neighbors voronoi
+type   = circle
+radius = 50
+ngrain = 8 		# for only neighbors
+seed   = 1234	# for only voronoi
+nphase = 8		# for only voronoi
+
+[bc]
+type = pbc

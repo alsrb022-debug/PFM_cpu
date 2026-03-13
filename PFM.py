@@ -536,10 +536,9 @@ def evolve_one_step(
                     else:
                         val = pk0
 
+                    # 0보다 작은 값만 잘라냄
                     if val < 0.0:
                         val = 0.0
-                    elif val > 1.0:
-                        val = 1.0
 
                     tmp_phi[kk] = val
 
@@ -555,6 +554,22 @@ def evolve_one_step(
                     for kk in range(count):
                         gid_k = cand_ids[kk]
                         tmp_phi[kk] = get_phi_at(phiO, idO, i, j, k, gid_k)
+
+                # tmp_phi 큰 값 순서로 정렬, cand_ids도 같이 이동
+                for a in range(count - 1):
+                    max_idx = a
+                    for b in range(a + 1, count):
+                        if tmp_phi[b] > tmp_phi[max_idx]:
+                            max_idx = b
+
+                    if max_idx != a:
+                        tmp_val = tmp_phi[a]
+                        tmp_phi[a] = tmp_phi[max_idx]
+                        tmp_phi[max_idx] = tmp_val
+
+                        tmp_id = cand_ids[a]
+                        cand_ids[a] = cand_ids[max_idx]
+                        cand_ids[max_idx] = tmp_id
 
                 for s in range(nmax):
                     phiN[i, j, k, s] = 0.0
@@ -577,7 +592,6 @@ def evolve_one_step(
 
                     phiN[i, j, k, 0] = 1.0
                     idN[i, j, k, 0] = cand_ids[best_k]
-
 
 if __name__ == "__main__":
     run("input.txt", out_dir="p_out")

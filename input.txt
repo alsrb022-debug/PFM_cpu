@@ -17,8 +17,8 @@ tifac = 0.2
 pss   = 1e-5
 
 [time]
-nstep = 30000
-nout  = 2000
+nstep = 3000
+nout  = 200
 
 [init] # plane triple circle sphere neighbors voronoi
 type   = circle

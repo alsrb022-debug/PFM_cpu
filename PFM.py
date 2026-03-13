@@ -441,7 +441,7 @@ def evolve_one_step(
     df = np.empty(nmax, dtype=np.float64)
     tmp_phi = np.empty(nmax, dtype=np.float64)
 
-    # Fortran식 local cache: center + 6 neighbors
+    # local cache: center + 6 neighbors
     p0_arr = np.empty(nmax, dtype=np.float64)
     p1_arr = np.empty(nmax, dtype=np.float64)
     p2_arr = np.empty(nmax, dtype=np.float64)
@@ -452,6 +452,10 @@ def evolve_one_step(
 
     psum_arr = np.empty(nmax, dtype=np.float64)
     range_arr = np.empty(nmax, dtype=np.int32)
+
+    # active candidate compression
+    active_ids = np.empty(nmax, dtype=np.int32)
+    active_map = np.empty(nmax, dtype=np.int32)
 
     for i in range(1, im + 1):
         for j in range(1, jm + 1):
@@ -472,6 +476,9 @@ def evolve_one_step(
                     psum_arr[s] = 0.0
                     range_arr[s] = 0
 
+                    active_ids[s] = EMPTY_ID
+                    active_map[s] = -1
+
                 count = 0
 
                 for s in range(nmax):
@@ -489,7 +496,7 @@ def evolve_one_step(
                 for s in range(nmax):
                     count = append_gid_if_new(cand_ids, count, idO[i, j, k - 1, s])
 
-                # 후보상별 center + 6-neighbor 값을 먼저 한 번만 읽음
+                # 후보상별 center + 6-neighbor 값을 먼저 읽고 local sum 계산
                 nph = 0
                 for kk in range(count):
                     gid_k = cand_ids[kk]
@@ -512,10 +519,21 @@ def evolve_one_step(
                         if psum_arr[kk] <= (7.0 - pss):
                             range_arr[kk] = 1
 
-                # df 계산
+                # active 후보만 압축
+                active_count = 0
                 for kk in range(count):
+                    if psum_arr[kk] >= pss:
+                        active_ids[active_count] = cand_ids[kk]
+                        active_map[active_count] = kk
+                        active_count += 1
+
+                # df 계산: active 후보만 대상으로 수행
+                for aa in range(active_count):
+                    kk = active_map[aa]
+
                     if range_arr[kk] == 1:
-                        for ll in range(count):
+                        for bb in range(active_count):
+                            ll = active_map[bb]
                             if ll == kk:
                                 continue
 
@@ -540,12 +558,14 @@ def evolve_one_step(
                                     + www_loc * pl0
                                 )
 
-                # phi 업데이트
-                for kk in range(count):
+                # phi 업데이트: active 후보만 대상으로 수행
+                for aa in range(active_count):
+                    kk = active_map[aa]
                     pk0 = p0_arr[kk]
 
                     plkk = 0.0
-                    for ll in range(count):
+                    for bb in range(active_count):
+                        ll = active_map[bb]
                         if ll == kk:
                             continue
 
@@ -557,24 +577,34 @@ def evolve_one_step(
                     else:
                         val = pk0
 
-                    # 0보다 작은 값만 잘라냄
                     if val < 0.0:
                         val = 0.0
 
                     tmp_phi[kk] = val
 
-                # 정규화
+                # 정규화도 active 후보만 대상으로 수행
                 pNsum = 0.0
-                for kk in range(count):
+                for aa in range(active_count):
+                    kk = active_map[aa]
                     pNsum += tmp_phi[kk]
 
                 if pNsum > 0.0:
                     inv = 1.0 / pNsum
-                    for kk in range(count):
+                    for aa in range(active_count):
+                        kk = active_map[aa]
                         tmp_phi[kk] *= inv
                 else:
-                    for kk in range(count):
+                    for aa in range(active_count):
+                        kk = active_map[aa]
                         tmp_phi[kk] = p0_arr[kk]
+
+                # active 후보를 앞으로 압축 복사
+                for aa in range(active_count):
+                    kk = active_map[aa]
+                    cand_ids[aa] = cand_ids[kk]
+                    tmp_phi[aa] = tmp_phi[kk]
+
+                count = active_count
 
                 # tmp_phi 큰 값 순서로 정렬, cand_ids도 같이 이동
                 for a in range(count - 1):
@@ -609,5 +639,7 @@ def evolve_one_step(
                 if slot == 0 and count > 0:
                     phiN[i, j, k, 0] = 1.0
                     idN[i, j, k, 0] = cand_ids[0]
+
+
 if __name__ == "__main__":
     run("input.txt", out_dir="p_out")

@@ -459,23 +459,6 @@ def evolve_one_step(
     for i in range(1, im + 1):
         for j in range(1, jm + 1):
             for k in range(1, km + 1):
-                for s in range(nmax):
-                    cand_ids[s] = EMPTY_ID
-                    df[s] = 0.0
-                    tmp_phi[s] = 0.0
-
-                    p0_arr[s] = 0.0
-                    p1_arr[s] = 0.0
-                    p2_arr[s] = 0.0
-                    p3_arr[s] = 0.0
-                    p4_arr[s] = 0.0
-                    p5_arr[s] = 0.0
-                    p6_arr[s] = 0.0
-
-                    psum_arr[s] = 0.0
-                    range_arr[s] = 0
-                    lap_arr[s] = 0.0
-                    active_map[s] = -1
 
                 count = 0
 
@@ -499,6 +482,12 @@ def evolve_one_step(
                 active_count = 0
                 for kk in range(count):
                     gid_k = cand_ids[kk]
+
+                    # 이번 셀에서 실제 사용하는 구간만 초기화
+                    df[kk] = 0.0
+                    tmp_phi[kk] = 0.0
+                    range_arr[kk] = 0
+                    lap_arr[kk] = 0.0
 
                     p0_arr[kk] = get_phi_at(phiO, idO, i, j, k, gid_k)
                     p1_arr[kk] = get_phi_at(phiO, idO, i + 1, j, k, gid_k)
@@ -642,6 +631,7 @@ def evolve_one_step(
                 if slot == 0 and count > 0:
                     phiN[i, j, k, 0] = 1.0
                     idN[i, j, k, 0] = cand_ids[0]
+
 
 if __name__ == "__main__":
     run("input.txt", out_dir="p_out")

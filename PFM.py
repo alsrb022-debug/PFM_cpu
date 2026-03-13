@@ -452,8 +452,8 @@ def evolve_one_step(
 
     psum_arr = np.empty(nmax, dtype=np.float64)
     range_arr = np.empty(nmax, dtype=np.int32)
+    lap_arr = np.empty(nmax, dtype=np.float64)
 
-    # active candidate compression
     active_map = np.empty(nmax, dtype=np.int32)
 
     for i in range(1, im + 1):
@@ -474,6 +474,7 @@ def evolve_one_step(
 
                     psum_arr[s] = 0.0
                     range_arr[s] = 0
+                    lap_arr[s] = 0.0
                     active_map[s] = -1
 
                 count = 0
@@ -521,7 +522,26 @@ def evolve_one_step(
 
                 nph = active_count
 
-                # df 계산: active 후보만 대상으로 수행
+                # active 후보에 대해 라플라시안을 한 번만 계산
+                for aa in range(active_count):
+                    kk = active_map[aa]
+
+                    if range_arr[kk] == 1:
+                        p0 = p0_arr[kk]
+                        p1 = p1_arr[kk]
+                        p2 = p2_arr[kk]
+                        p3 = p3_arr[kk]
+                        p4 = p4_arr[kk]
+                        p5 = p5_arr[kk]
+                        p6 = p6_arr[kk]
+
+                        lap_arr[kk] = (
+                            (p1 - 2.0 * p0 + p2) / dx2 +
+                            (p3 - 2.0 * p0 + p4) / dy2 +
+                            (p5 - 2.0 * p0 + p6) / dz2
+                        )
+
+                # df 계산: ll의 라플라시안은 재사용
                 for aa in range(active_count):
                     kk = active_map[aa]
 
@@ -532,24 +552,13 @@ def evolve_one_step(
                                 continue
 
                             if range_arr[ll] == 1:
-                                pl0 = p0_arr[ll]
-                                pl1 = p1_arr[ll]
-                                pl2 = p2_arr[ll]
-                                pl3 = p3_arr[ll]
-                                pl4 = p4_arr[ll]
-                                pl5 = p5_arr[ll]
-                                pl6 = p6_arr[ll]
-
+                                # 현재는 상수 계수. 나중에 ij 계수 넣을 때 여기만 바꾸면 됨.
                                 cep_loc = cep
                                 www_loc = www
 
-                                phixxl = (pl1 - 2.0 * pl0 + pl2) / dx2
-                                phiyyl = (pl3 - 2.0 * pl0 + pl4) / dy2
-                                phizzl = (pl5 - 2.0 * pl0 + pl6) / dz2
-
                                 df[kk] += (
-                                    0.5 * cep_loc * cep_loc * (phixxl + phiyyl + phizzl)
-                                    + www_loc * pl0
+                                    0.5 * cep_loc * cep_loc * lap_arr[ll]
+                                    + www_loc * p0_arr[ll]
                                 )
 
                 # phi 업데이트: active 후보만 대상으로 수행

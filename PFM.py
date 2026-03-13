@@ -583,15 +583,8 @@ def evolve_one_step(
                         slot += 1
 
                 if slot == 0 and count > 0:
-                    best_k = 0
-                    best_phi = tmp_phi[0]
-                    for kk in range(1, count):
-                        if tmp_phi[kk] > best_phi:
-                            best_phi = tmp_phi[kk]
-                            best_k = kk
-
                     phiN[i, j, k, 0] = 1.0
-                    idN[i, j, k, 0] = cand_ids[best_k]
+                    idN[i, j, k, 0] = cand_ids[0]
 
 if __name__ == "__main__":
     run("input.txt", out_dir="p_out")

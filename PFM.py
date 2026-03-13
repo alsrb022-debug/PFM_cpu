@@ -614,11 +614,6 @@ def evolve_one_step(
                         cand_ids[a] = cand_ids[max_idx]
                         cand_ids[max_idx] = tmp_id
 
-                # 저장 초기화
-                for s in range(nmax):
-                    phiN[i, j, k, s] = 0.0
-                    idN[i, j, k, s] = EMPTY_ID
-
                 # pss 이상만 저장
                 slot = 0
                 for kk in range(count):
@@ -631,7 +626,12 @@ def evolve_one_step(
                 if slot == 0 and count > 0:
                     phiN[i, j, k, 0] = 1.0
                     idN[i, j, k, 0] = cand_ids[0]
+                    slot = 1
 
+                # 남는 뒷부분만 초기화
+                for s in range(slot, nmax):
+                    phiN[i, j, k, s] = 0.0
+                    idN[i, j, k, s] = EMPTY_ID
 
 if __name__ == "__main__":
     run("input.txt", out_dir="p_out")

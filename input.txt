@@ -1,6 +1,6 @@
 [domain]
-im = 200
-jm = 200
+im = 201
+jm = 1
 km = 1
 
 [grid]  # [m]
@@ -17,11 +17,11 @@ tifac = 0.2
 pss   = 1e-5
 
 [time]
-nstep = 30000
-nout  = 2000
+nstep = 100
+nout  = 1
 
 [init] # plane triple circle sphere neighbors voronoi
-type   = circle
+type   = plane
 radius = 50
 ngrain = 8 		# for only neighbors
 seed   = 1234	# for only voronoi
